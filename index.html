@@ -1,0 +1,61 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Unipixelverse</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      /* Custom font for a more pixel/retro feel */
+      @import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
+      body {
+        font-family: 'VT323', monospace;
+      }
+      /* Ensure inputs also use the font if not inherited by default */
+      input, button, textarea, select {
+        font-family: 'VT323', monospace;
+      }
+      .starry-background {
+        background-color: #060914; /* Very dark deep blue */
+        /* Tiny white stars */
+        background-image:
+          radial-gradient(rgba(255, 255, 255, 0.2) 0.5px, transparent 0.5px),
+        /* Slightly larger, less frequent faint blue stars */
+          radial-gradient(rgba(200, 200, 255, 0.15) 0.75px, transparent 0.75px);
+        background-size: 30px 30px, 50px 50px; /* Adjusted for a slightly sparser feel */
+        background-position: 0 0, 25px 25px; /* Offset the layers */
+        animation: twinkle 60s infinite linear; /* Slower, more subtle twinkle */
+      }
+
+      @keyframes twinkle {
+        0% { background-position: 0 0, 25px 25px; }
+        100% { background-position: -60px -60px, -25px -25px; } /* Negative values for opposite direction */
+      }
+
+      .galaxy-header-bg {
+        /* The user should place 'galaxy.png' in the public path (e.g., public/galaxy.png or /galaxy.png) */
+        background-image: url('/galaxy.png');
+        background-size: cover;
+        background-position: center;
+        /* Fallback if image doesn't load */
+        background-color: #1a052a; /* Deep purple as a fallback */
+      }
+    </style>
+<script type="importmap">
+{
+  "imports": {
+    "react/": "https://esm.sh/react@^19.1.0/",
+    "react": "https://esm.sh/react@^19.1.0",
+    "react-dom/": "https://esm.sh/react-dom@^19.1.0/",
+    "@google/genai": "https://esm.sh/@google/genai@^1.0.1"
+  }
+}
+</script>
+</head>
+<body class="starry-background">
+    <div id="root"></div>
+    <script type="module" src="/index.tsx"></script>
+</body>
+</html><link rel="stylesheet" href="index.css">
+<script src="index.tsx" type="module"></script>

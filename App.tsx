@@ -16,6 +16,11 @@ interface QuantizedDimensions {
   height: number;
 }
 
+interface AppMetadata {
+  prompt?: string;
+  // other metadata fields can be added here if needed
+}
+
 const App: React.FC = () => {
   const [prompt, setPrompt] = useState<string>('');
   const [selectedPixelHeight, setSelectedPixelHeight] = useState<ResolutionOption>(RESOLUTION_OPTIONS[0]);
@@ -32,11 +37,30 @@ const App: React.FC = () => {
   const [surprisePromptError, setSurprisePromptError] = useState<string | null>(null);
 
   useEffect(() => {
+    // Check for API_KEY (this is also checked in geminiService before calls)
     if (!process.env.API_KEY) {
       setApiKeyMissing(true);
       console.warn("API_KEY environment variable is not set. Image generation will not work.");
     }
-  }, []);
+
+    // Fetch metadata.json to potentially set an initial prompt
+    fetch('/metadata.json')
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json() as Promise<AppMetadata>;
+      })
+      .then(data => {
+        if (data && typeof data.prompt === 'string' && data.prompt.trim() !== '') {
+          setPrompt(data.prompt);
+        }
+      })
+      .catch(err => {
+        console.warn("Could not load or parse metadata.json for initial prompt:", err);
+        // It's not critical if metadata.json isn't found or is malformed for this feature.
+      });
+  }, []); // Empty dependency array ensures this runs once on mount
 
   const parseAspectRatio = (aspectRatioString: AspectRatioOption): { w: number, h: number } => {
     const [w, h] = aspectRatioString.split(':').map(Number);
@@ -335,4 +359,3 @@ const App: React.FC = () => {
 };
 
 export default App;
-    

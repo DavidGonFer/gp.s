@@ -1,16 +1,19 @@
 
-import { GoogleGenAI, GenerateImagesResponse } from "@google/genai";
+import { GoogleGenAI, GenerateImagesResponse, GeneratedImage } from "@google/genai";
 
-const apiKey = process.env.API_KEY;
-
-if (!apiKey) {
-  console.error("API_KEY environment variable is not set.");
+// Check for API_KEY at the module level for an initial warning if needed.
+if (!process.env.API_KEY) {
+  console.error("API_KEY environment variable is not set. SDK might be initialized without a key.");
 }
 
-const ai = new GoogleGenAI({ apiKey: apiKey || "MISSING_API_KEY" }); 
+// Initialize GoogleGenAI with process.env.API_KEY directly.
+// The SDK's constructor options allow apiKey to be undefined.
+// Calls will fail if the key is indeed missing and an operation is attempted,
+// which is handled by checks within each exported function.
+const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
 export async function generatePixelArt(userPrompt: string, aspectRatio: string): Promise<string> {
-  if (!apiKey) {
+  if (!process.env.API_KEY) {
     throw new Error("API Key is not configured. Cannot generate images.");
   }
 
@@ -28,27 +31,39 @@ export async function generatePixelArt(userPrompt: string, aspectRatio: string):
     });
 
     if (response.generatedImages && response.generatedImages.length > 0) {
-      const firstImageResult = response.generatedImages[0];
+      const firstImageResult: GeneratedImage = response.generatedImages[0];
 
       if (firstImageResult.image?.imageBytes) {
         return `data:image/png;base64,${firstImageResult.image.imageBytes}`;
-      } else if (firstImageResult.error) {
-        console.error("Image generation error from API:", firstImageResult.error);
-        throw new Error(`Image generation failed: ${firstImageResult.error.message} (Code: ${firstImageResult.error.code})`);
+      } else if (firstImageResult.errorDetails) {
+        console.error("Image generation error from API:", firstImageResult.errorDetails);
+        throw new Error(`Image generation failed: ${firstImageResult.errorDetails.message} (Code: ${firstImageResult.errorDetails.code})`);
       } else {
-        let detailMessage = "No image data received.";
-        if (firstImageResult.finishReason && firstImageResult.finishReason !== "SUCCESS") {
-          detailMessage += ` Generation finished due to: ${firstImageResult.finishReason}.`;
-        }
+        // This 'else' block means:
+        // 1. No image.imageBytes
+        // 2. No errorDetails
+        // The original code attempted to use 'finishReason' and 'safetyRatings' from 'firstImageResult'
+        // to provide more specific error details. However, the provided error messages indicate
+        // these properties do not exist on 'GeneratedImage' in the current environment.
+        // Therefore, those checks have been removed to resolve the type errors.
+        let detailMessage = "No image data received and no specific error details provided for the image.";
         
-        if (firstImageResult.safetyRatings && firstImageResult.safetyRatings.some(rating => rating.blocked === true)) {
-          const blockedCategories = firstImageResult.safetyRatings
-            .filter(r => r.blocked)
-            .map(r => r.category)
-            .join(', ');
-          detailMessage += ` Image was likely blocked by safety filters. Affected categories: ${blockedCategories || 'unknown'}.`;
-          console.warn("Image blocked by safety filters. Details:", firstImageResult.safetyRatings);
-        }
+        // The following conditional blocks were removed because the properties they check 
+        // ('finishReason', 'safetyRatings' on 'firstImageResult') caused type errors:
+        //
+        // if (firstImageResult.finishReason && firstImageResult.finishReason !== "SUCCESS") {
+        //   detailMessage += ` Generation finished due to: ${firstImageResult.finishReason}.`;
+        // }
+        // 
+        // if (firstImageResult.safetyRatings && firstImageResult.safetyRatings.some(rating => rating.blocked === true)) {
+        //   const blockedCategories = firstImageResult.safetyRatings
+        //     .filter(r => r.blocked)
+        //     .map(r => r.category)
+        //     .join(', ');
+        //   detailMessage += ` Image was likely blocked by safety filters. Affected categories: ${blockedCategories || 'unknown'}.`;
+        //   console.warn("Image blocked by safety filters. Details:", firstImageResult.safetyRatings);
+        // }
+        
         console.error(`Image generation issue. Details: ${detailMessage}`, firstImageResult);
         throw new Error(`Image generation failed. ${detailMessage}`);
       }
@@ -86,7 +101,7 @@ export async function generatePixelArt(userPrompt: string, aspectRatio: string):
 }
 
 export async function generateSurprisePrompt(): Promise<string> {
-  if (!apiKey) {
+  if (!process.env.API_KEY) {
     throw new Error("API Key is not configured. Cannot generate prompt.");
   }
 
